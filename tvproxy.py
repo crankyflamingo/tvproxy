@@ -10,7 +10,7 @@
 # connections
 # YOu set your home router to point to the sever you've created running
 # this
-# This should work for a variety of
+# This should work for a variety of tv sites.
 #
 
 import socket
@@ -23,15 +23,19 @@ UPSTREAM_DNS = '8.8.8.8'
 
 # defines the sites that need proxying
 site_intercepts = {}
+
+# Win8 metro app
 site_intercepts['cbp.nccp.netflix.com'] = ''
 site_intercepts['secure.netflix.com'] = ''
 site_intercepts['ichnaea.netflix.com'] = ''
 site_intercepts['nmtracking.netflix.com'] = ''
 site_intercepts['www.netflix.com'] = ''
-#site_intercepts['api-global.netflix.com'] = '' # might not need
+# Roku app
+site_intercepts['appboot.netflix.com'] = ''
+site_intercepts['nrdp.nccp.netflix.com'] = ''
+site_intercepts['api-global.netflix.com'] = ''
 
-PROXY_HOST_IP = '192.168.1.106'
-#PROXY_HOST_IP = '54.187.66.32'
+PROXY_HOST_IP = '192.168.0.1'
 
 def get_a_record(records):
     """
