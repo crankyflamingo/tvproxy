@@ -19,7 +19,7 @@ from thread import start_new_thread
 import copy
 
 HOST = ''   # listens on all interfaces
-UPSTREAM_DNS = '54.187.66.32'
+UPSTREAM_DNS = '8.8.8.8'
 
 # defines the sites that need proxying
 site_intercepts = {}
@@ -35,8 +35,13 @@ site_intercepts['appboot.netflix.com'] = ''
 site_intercepts['nrdp.nccp.netflix.com'] = ''
 site_intercepts['api-global.netflix.com'] = ''
 site_intercepts['index.ehub.netflix.com'] = ''
+# website
+site_intercepts['pr.netflix.com'] = ''
+site_intercepts['presentationtracking.netflix.com'] = ''
+site_intercepts['api-us.netflix.com'] =''
+site_intercepts['cbp-us.nccp.netflix.com'] = ''
 
-PROXY_HOST_IP = '192.168.1.106'   # This is the external IP of the proxy
+PROXY_HOST_IP = '192.168.0.1'   # This is the external IP of the proxy
 
 def get_a_record(records):
     """
