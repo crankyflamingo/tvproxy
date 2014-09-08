@@ -19,7 +19,7 @@ from thread import start_new_thread
 import copy
 
 HOST = ''   # listens on all interfaces
-UPSTREAM_DNS = '8.8.8.8'
+UPSTREAM_DNS = '54.187.66.32'
 
 # defines the sites that need proxying
 site_intercepts = {}
@@ -34,8 +34,9 @@ site_intercepts['www.netflix.com'] = ''
 site_intercepts['appboot.netflix.com'] = ''
 site_intercepts['nrdp.nccp.netflix.com'] = ''
 site_intercepts['api-global.netflix.com'] = ''
+site_intercepts['index.ehub.netflix.com'] = ''
 
-PROXY_HOST_IP = '192.168.0.1'
+PROXY_HOST_IP = '192.168.1.106'   # This is the external IP of the proxy
 
 def get_a_record(records):
     """
@@ -71,6 +72,7 @@ def dns_handler(data, addr, sock):
     proxy.header.id = request.header.id
     response = proxy.send(UPSTREAM_DNS)
 
+
     # save and update the intercept IP. Potentially Necessary as netflix
     # rotates servers for load balancing
     if str(request.q.qname).rstrip('\.') in site_intercepts:
@@ -86,6 +88,9 @@ def dns_handler(data, addr, sock):
         resp_obj.add_answer(*dnslib.RR.fromZone(str(request.q.qname) \
                                                 +" A " + PROXY_HOST_IP))
         response = dnslib.DNSRecord.pack(resp_obj)
+    else:
+        print 'Ignoring', request.q.qname
+
     sock.sendto(response, addr)
 
 def mitm_proxy(port=443):
@@ -168,9 +173,9 @@ def main():
     print 'Intercepting:'
     print site_intercepts
 
-    # set up transparent ssl proxy
+    # set up transparent HTTPS + HTTP proxy
     start_new_thread(mitm_proxy, (443,))
-    #start_new_thread(mitm_proxy, (80))
+    start_new_thread(mitm_proxy, (80,))
 
     print '\nListening for DNS queries, will redirect where necessary'
     while True:
