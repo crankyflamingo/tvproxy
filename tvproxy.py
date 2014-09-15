@@ -1,17 +1,19 @@
 # Author: @mcc0rm4ck aka @crankyflamingo
-# tvproxy v0.1 - a POC traffic proxy you can use to watch tv from
+# tvproxy v0.2 - a POC traffic proxy you can use to watch tv from
 # outside the country to bypass restrictions.
-# Not all data is streamed via the proxy, just DNS & initial connections
-# that determine locale.
-# Requires a machine inside the country to proxy some traffic off.
-# Easiest way is to create an Azure/AWS free tier.
-# Runs a DNS, HTTPS and HTTP (not actually used) proxy
-# The DNS is to prevent GeoDNS lookups, and the HTTPS is for the initial
-# connections
-# You set your home router to point to the sever you've created running
-# this script.
+# Not all data is required to be streamed via the proxy, just DNS and
+# initial connections that determine locale.
 #
-# This should work for a variety of tv sites.
+# Designed to be run on a machine inside the country where the
+# restrictions are in order to proxy the traffic.
+# An easy way is to create an AWS free tier, which lasts for a year.
+#
+# Runs a minimal DNS proxy, and TCP proxy on ports 443 and 80 for HTTP(S)
+# The DNS server is to prevent GeoDNS lookups, and the TCP proxy is for
+# initial connections.
+#
+# Once up and running, you set your home router to point to the server
+# running this script. This should work for a variety of tv sites.
 #
 # For faster DNS queries, consider running a local dnsmasq instance and
 # simply setting the following option in the /etc/dnsmasq.conf file:
@@ -63,8 +65,7 @@ site_routes['android.nccp.netflix.net'] = ''
 site_routes['nrdp.nccp.netflix.net'] = ''
 site_routes['htmltvui-api.netflix.com'] = ''
 
-PROXY_HOST_IP = '192.168.0.1'   # This is the external IP of the proxy
-
+PROXY_HOST_IP = '192.168.0.1'   # This is the external IP of your server
 site_throughput = {}    # Track data to sites for potential triaging
 
 def get_a_record(records):
@@ -101,8 +102,8 @@ def dns_handler(data, addr, sock):
   proxy.header.id = request.header.id
   response = proxy.send(UPSTREAM_DNS)
 
-  # save and update the intercept IP. Potentially Necessary because
-  # TV sites rotate DNS entries for load balancing
+  # Save and update the intercept IP. Potentially Necessary because
+  # TV sites rotate DNS entries for load balancing, etc.
   for site in site_intercepts:
     if site.match(str(request.q.qname)):
       print 'Intercepting DNS request for ', str(request.q.qname)
@@ -123,11 +124,18 @@ def dns_handler(data, addr, sock):
   sock.sendto(response, addr)
 
 def update_throughput(domain, bytes_):
+  """
+  Called to update the global variables tracking bytes in and out to a
+  site
+  """
   global site_throughput
   site_throughput.setdefault(domain, 1)
   site_throughput[domain] = site_throughput[domain] + bytes_
 
 def display_throughput():
+  """
+  Periodically displays throughput stats
+  """
   while True:
     print ' '
     for domain, bytes_ in site_throughput.items():
@@ -136,7 +144,7 @@ def display_throughput():
 
 def mitm_proxy(port=443):
   '''
-  Listens on the supplied port for connections, invokes proxy for each
+  Listens on the supplied port for connections, invokes TCP proxy for each
   one
   '''
   print '\nmitm proxy starting on %s' % port
@@ -152,8 +160,8 @@ def mitm_proxy(port=443):
 
 def data_pipe(src, dst, skip, indata, domain):
   '''
-  shuttles data back and forth between host and dest.
-  skip and indata are for the initial connection attempt where we had
+  Shuttles data back and forth between host and dest.
+  Skip and indata are for the initial connection attempt where we had
   to peek at the incoming data to match the intended domain (HTTP(S) GET
   or POST has the domain in the header, even on with SSL this still
   works
@@ -175,7 +183,7 @@ def data_pipe(src, dst, skip, indata, domain):
 
 def get_conn_ip(data):
   '''
-  looks in initial data request (HTTP GET/POST) to match the intended
+  Looks in initial data request (HTTP GET/POST) to match the intended
   destination, and returns the right IP
   '''
   for ni in site_routes:
@@ -184,7 +192,7 @@ def get_conn_ip(data):
 
 def connection_forward(src, port):
   '''
-  on connect, this sets up data_pipes between source and dest
+  On connect, this sets up data_pipes between source and dest
   '''
   # interestingly enough, things go badly if you don't copy the data
   # to a different buffer, even though there is no modifying going on
@@ -203,6 +211,9 @@ def connection_forward(src, port):
   start_new_thread(data_pipe, (dst, src, False, None, domain))
 
 def main():
+  """
+  Where the action is.
+  """
 
   # create DNS server
   udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
