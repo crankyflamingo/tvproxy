@@ -217,7 +217,7 @@ def main():
 
   # create DNS server
   udp_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-  udp_sock.bind((HOST,54))
+  udp_sock.bind((HOST,53))
 
   global site_routes
   global site_intercepts
